@@ -1,11 +1,12 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const dotenv = require('dotenv');
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const dotenv = require("dotenv");
 dotenv.config();
 
-const User = new mongoose.Schema({
-     username: {
+const User = new mongoose.Schema(
+  {
+    username: {
       type: String,
       required: true,
       lowercase: true,
@@ -36,8 +37,8 @@ const User = new mongoose.Schema({
       required: true,
     },
     coverimage: {
-        type: String,
-        required: false
+      type: String,
+      required: false,
     },
     videohistory: {
       type: mongoose.Schema.Types.ObjectId,
@@ -49,10 +50,46 @@ const User = new mongoose.Schema({
   },
   {
     timestamps: true,
-  });
+  }
+);
+
+User.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
 
 
+User.methods.comparePassword = async function (oldPassword) {
+  return await bcrypt.compare(oldPassword, this.password);
+};
 
+User.methods.generateToken = function () {
+  return jwt.sign(
+    {
+      id: this._id,
+      username: this.username,
+      email: this.email,
+      fullname: this.fullname,
+    },
+    process.env.SECRET_ACCESS_KEY,
+    {
+      expiresIn: ACCESS_KEY_EXPIRE,
+    }
+  );
+};
 
-  const UserSchema = mongoose.model("UserModel" , User);
-  module.exports = {UserSchema};
+User.methods.generateRefreshToken = function () {
+  return jwt.sign(
+    {
+      id: this._id,
+    },
+    process.env.REFRESH_TOKEN_KEY,
+    {
+      expiresIn: REFRESH_TOKEN_EXPIRE,
+    }
+  );
+};
+
+const UserSchema = mongoose.model("UserModel", User);
+module.exports = { UserSchema };
