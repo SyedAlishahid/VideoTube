@@ -3,7 +3,6 @@ const { UserSchema } = require("../model/user.model.js");
 const { VideoUploader } = require("../cloudinary/cloudinary.js");
 
 const DataInserter = async (req, res) => {
-  console.log('request coms')
   try {
     //First of all we fetch fro model
     const { username, email, fullname, password } = req.body;
@@ -27,6 +26,7 @@ const DataInserter = async (req, res) => {
 
     // locally Saved in PC
     const avatarpath = req.files?.avatar?.[0]?.path;
+    const coverImagepath = req.files?.coverimage?.[0]?.path;
 
     if (!avatarpath) {
       res.status(500).json({
@@ -36,22 +36,24 @@ const DataInserter = async (req, res) => {
     }
 
     //Uploading on Cloudinary
+    const CoverImg = coverImagepath ? await VideoUploader(coverImagepath): null
     const Avatar = await VideoUploader(avatarpath);
     //Saving in DB
-    await UserSchema.create({
+    const user = await UserSchema.create({
       username,
       fullname,
       password,
       email,
+      coverimage: CoverImg?.url || '',
       avatar: Avatar.url,
     });
 
     //Hiding pass/Refresh-token
-    const hideDetails = await UserSchema.findById(_.id).select(
+    const hideDetails = await UserSchema.findById(user._id).select(
       "-password -refreshtoken"
     );
 
-    //returning 201 = goood request
+    //returning 201 = good request
     return res.status(201).json({
       success: true,
       Payload: hideDetails,

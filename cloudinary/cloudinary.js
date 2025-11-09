@@ -12,15 +12,21 @@ cloudinary.config({
 const VideoUploader = async (file) => {
   try {
     if (!file) return null;
-    const response = await v2.uploader.upload(file, {
+
+    const response = await cloudinary.uploader.upload(file, {
       resource_type: "auto",
     });
-    console.log(response.url);
+
+    // remove local file after upload
+    fs.unlinkSync(file);
+
+    return response; // IMPORTANT
   } catch (error) {
-    fs.unlink(file);
+    if (file) {
+      try { fs.unlinkSync(file); } catch {}
+    }
     return null;
   }
 };
 
-
-module.exports = {VideoUploader}
+module.exports = { VideoUploader };
