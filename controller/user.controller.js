@@ -14,6 +14,12 @@ const DataInserter = async (req, res) => {
       });
     }
 
+  if (password.length < 6  ||  password.length > 8) {
+  return res.status(402).json({
+    success: false,
+    message: "Password must be at least 8 characters long",
+  });
+}
     // check if user already exist
     const existedUser = await UserSchema.findOne({ email });
 
