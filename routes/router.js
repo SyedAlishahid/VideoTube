@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { DataInserter } = require("../controller/user.controller.js");
+const { SignUp } = require("../controller/user.controller.js");
 
 const upload = require("../middlewares/multer.js");
 
@@ -10,7 +10,7 @@ router.post(
     { name: "avatar", maxCount: 1 },
     { name: "coverimage", maxCount: 1 },
   ]),
-  DataInserter
+  SignUp
 );
 
 module.exports =  router ;
