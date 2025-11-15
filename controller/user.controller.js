@@ -17,10 +17,7 @@ const GenerateRefreshandAccessTokens = async (userId) => {
 
     return { accessToken, refreshToken };
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+   console.log(error)
   }
 };
 
@@ -98,9 +95,10 @@ const SignUp = async (req, res) => {
 
 const login = async (req, res) => {
   try {
+    
     const { username, email, password } = req.body;
 
-    if (!username || !email) {
+    if (!username && !email) {
       res.status(400).json({
         success: false,
         message: "UserName or Email required!",
@@ -120,7 +118,7 @@ const login = async (req, res) => {
     }
 
     //Check password
-    const passChecker = UserSchema.comparePassword(password);
+    const passChecker = await FindUser.comparePassword(password);
 
     if (!passChecker) {
       res.status(400).json({
@@ -129,7 +127,7 @@ const login = async (req, res) => {
       });
     }
 
-    const hideCredientials = UserSchema.findById(FindUser._id).select(
+    const hideCredientials = await UserSchema.findById(FindUser._id).select(
       "-password -refreshToken"
     )
 

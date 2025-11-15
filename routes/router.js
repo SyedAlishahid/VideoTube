@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { SignUp } = require("../controller/user.controller.js");
+const { SignUp, login } = require("../controller/user.controller.js");
 
 const upload = require("../middlewares/multer.js");
 
@@ -12,5 +12,8 @@ router.post(
   ]),
   SignUp
 );
+
+
+router.post("/login", login)
 
 module.exports =  router ;
