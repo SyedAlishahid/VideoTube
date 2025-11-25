@@ -5,9 +5,9 @@ const { VideoUploader } = require("../cloudinary/cloudinary.js");
 //Access and refresh Token Generate
 const GenerateRefreshandAccessTokens = async (userId) => {
   try {
-    const user = await UserSchema.findById({ userId });
-    const accessToken = generateToken();
-    const refreshToken = generateRefreshToken();
+    const user = await UserSchema.findById(userId);
+    const accessToken = user.generateToken();
+    const refreshToken = user.generateRefreshToken();
 
     // its saving value of user.refreshtoken after finding though id!
     user.refreshToken = refreshToken;
@@ -17,7 +17,7 @@ const GenerateRefreshandAccessTokens = async (userId) => {
 
     return { accessToken, refreshToken };
   } catch (error) {
-   console.log(error)
+    console.log(error);
   }
 };
 
@@ -27,7 +27,7 @@ const SignUp = async (req, res) => {
     const { username, email, fullname, password } = req.body;
 
     if (!username || !email || !fullname || !password) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: "All fields required",
       });
@@ -43,7 +43,7 @@ const SignUp = async (req, res) => {
     const existedUser = await UserSchema.findOne({ email });
 
     if (existedUser) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: "User already Exist!",
       });
@@ -54,7 +54,7 @@ const SignUp = async (req, res) => {
     const coverImagepath = req.files?.coverimage?.[0]?.path;
 
     if (!avatarpath) {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: "Avator is nesccesory!",
       });
@@ -95,11 +95,10 @@ const SignUp = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    
     const { username, email, password } = req.body;
 
     if (!username && !email) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: "UserName or Email required!",
       });
@@ -111,7 +110,7 @@ const login = async (req, res) => {
     });
 
     if (!FindUser) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: "User Not found!",
       });
@@ -121,35 +120,80 @@ const login = async (req, res) => {
     const passChecker = await FindUser.comparePassword(password);
 
     if (!passChecker) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: "Wrong Password!",
       });
     }
 
-    const hideCredientials = await UserSchema.findById(FindUser._id).select(
+    //Its hide password and refresh token and return only other things
+    const user = await UserSchema.findById(FindUser._id).select(
       "-password -refreshToken"
-    )
+    );
 
-    const { accessToken, refreshToken } = GenerateRefreshandAccessTokens(
+    const { accessToken, refreshToken } = await GenerateRefreshandAccessTokens(
       FindUser._id
     );
 
+    //it mean cookies only handle from server!
+    const opt = {
+      httpOnly: true,
+      secure: true,
+    };
     return res
       .status(200)
-      .cookie(refreshToken, "refreshToken")
-      .cookie(accessToken, "accessToken")
+      .cookie("refreshToken", refreshToken, opt)
+      .cookie("accessToken", accessToken, opt)
       .json({
         success: true,
         message: "You are successfully LoggedIn",
-        payload: refreshToken, accessToken, hideCredientials
+        payload: refreshToken,
+        accessToken,
+        user,
       });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
   }
 };
 
-module.exports = { SignUp, login };
+const logout = async (req, res) => {
+  try {
+    await findByIdAndUpdate(
+      req.User._id,
+      {
+        $set: {
+          refreshToken: undefined,
+        },
+      },
+      {
+        new: true,
+      }
+    );
+
+ const opt = {
+      httpOnly: true,
+      secure: true,
+    };    
+
+   res
+   .status(200)
+   .clearcookie(accessToken, opt)
+   .clearcookie(refreshToken, opt)
+   .json({
+    message: "User Successfully Logout!",
+    success: true,
+  }) 
+  } catch (error) {
+    return res
+    .status(400)
+    .json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+module.exports = { SignUp, login, logout };

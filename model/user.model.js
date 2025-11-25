@@ -74,7 +74,7 @@ User.methods.generateToken = function () {
     },
     process.env.SECRET_ACCESS_KEY,
     {
-      expiresIn: ACCESS_KEY_EXPIRE,
+      expiresIn: process.env.ACCESS_KEY_EXPIRE,
     }
   );
 };
@@ -86,7 +86,7 @@ User.methods.generateRefreshToken = function () {
     },
     process.env.REFRESH_TOKEN_KEY,
     {
-      expiresIn: REFRESH_TOKEN_EXPIRE,
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRE,
     }
   );
 };
