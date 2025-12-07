@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const { UserSchema } = require("../model/user.model.js");
 const { VideoUploader } = require("../cloudinary/cloudinary.js");
+const jwt = require("jsonwebtoken");
 
 //Access and refresh Token Generate
 const GenerateRefreshandAccessTokens = async (userId) => {
@@ -192,6 +193,54 @@ const logout = async (req, res) => {
       message: error.message,
     });
   }
+};
+
+const RefreshTokenUpdate = async (req, res) => {
+  //token comes in encrpted form
+  const incomingRFtoken = req.body.refreshtoken || req.cookie.refreshtoken;
+
+  if (!incomingRFtoken) {
+    res.status(400).json({
+      success: false,
+      message: "refershToken cant fetch!",
+    });
+  }
+
+  const DecodedToken = jwt.verify(
+    incomingRFtoken,
+    process.env.REFRESH_TOKEN_KEY
+  );
+
+  const UserInfo = await UserSchema.findById(DecodedToken?._id);
+
+  if (!UserInfo) {
+    res.status(400).json({
+      success: false,
+      message: "Token invalid!",
+    });
+  }
+
+  if (DecodedToken !== user.refreshtoken) {
+    res.status(400).json({
+      success: false,
+      message: "Token expire or used!",
+    });
+  }
+
+  const opt = {
+    secure : true,
+    httpOnly : true,
+  }
+
+ const {accessToken, NewrefreshToken} = await GenerateRefreshandAccessTokens(UserInfo._id);
+
+  res.status(200)
+  .cookie('accessToken',  accessToken ,opt)
+  .cookie('refreshToken', NewrefreshToken ,opt)
+  .json({
+    success: true,
+    message: "New Refresh token update successfully!",
+  });
 };
 
 module.exports = { SignUp, login, logout };
