@@ -6,7 +6,7 @@ const VerifyJWT = async (req, res, next) => {
   try {
     const token =
       req.cookies?.accessToken ||
-      req.header("Authorization")?.replace("Bearer", "");
+      req.header("Authorization")?.replace("Bearer ", "");
     if (!token) {
      return res.status(402).json({
         success: false,
@@ -14,19 +14,19 @@ const VerifyJWT = async (req, res, next) => {
       });
     }
 
-    const Verifyuser = jwt.verify(token, process.env.SECRET_ACCESS_KEY);
-    const User = UserSchema.findOne(Verifyuser?._id).select(
+    const decodeToken = jwt.verify(token, process.env.SECRET_ACCESS_KEY);
+    const user = await UserSchema.findById(decodeToken?.id).select(
       "-password -refreshtoken"
     )
 
-    if(!User){
+    if(!user){
        return res.status(402).json({
         success: false,
-        message: "User not found",
+        message: "User not found" ,
       });
     }
 
-    req.user = User;
+    req.user = user;
     next();
   } catch (error){
        return res.status(500).json({
@@ -38,3 +38,4 @@ const VerifyJWT = async (req, res, next) => {
 };
 
 module.exports = { VerifyJWT };
+

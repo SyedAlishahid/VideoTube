@@ -161,8 +161,8 @@ const login = async (req, res) => {
 
 const logout = async (req, res) => {
   try {
-    await findByIdAndUpdate(
-      req.User._id,
+    await UserSchema.findByIdAndUpdate(
+      req.user._id,
       {
         $set: {
           refreshToken: undefined,
@@ -173,23 +173,21 @@ const logout = async (req, res) => {
       }
     );
 
- const opt = {
+    const opt = {
       httpOnly: true,
       secure: true,
-    };    
+    };
 
-   res
-   .status(200)
-   .clearcookie(accessToken, opt)
-   .clearcookie(refreshToken, opt)
-   .json({
-    message: "User Successfully Logout!",
-    success: true,
-  }) 
+    res
+      .status(200)
+      .clearCookie("accessToken", opt)
+      .clearCookie("refreshToken", opt)
+      .json({
+        message: "User Successfully Logout!",
+        success: true,
+      });
   } catch (error) {
-    return res
-    .status(400)
-    .json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
