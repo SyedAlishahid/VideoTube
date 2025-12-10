@@ -243,4 +243,4 @@ const RefreshTokenUpdate = async (req, res) => {
   });
 };
 
-module.exports = { SignUp, login, logout };
+module.exports = { SignUp, login, logout, RefreshTokenUpdate };

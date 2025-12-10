@@ -27,7 +27,7 @@ const videoSchema = new mongoose.Schema(
     },
     createdby: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "user",
+      ref: "User",
     },
   },
   { timestamps: true }
