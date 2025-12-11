@@ -1,7 +1,14 @@
 const express = require("express");
 const router = express.Router();
-const { SignUp, login, logout, RefreshTokenUpdate } = require("../controller/user.controller.js");
-const {VerifyJWT} = require('../middlewares/auth.middleware.js')
+const {
+  SignUp,
+  login,
+  logout,
+  RefreshTokenUpdate,
+  forgotPassword,
+  UserInfo,
+} = require("../controller/user.controller.js");
+const { VerifyJWT } = require("../middlewares/auth.middleware.js");
 
 const upload = require("../middlewares/multer.js");
 
@@ -14,9 +21,11 @@ router.post(
   SignUp
 );
 
-router.post("/login", login)
-router.post('/logout', VerifyJWT , logout)
+router.post("/login", login);
+router.post("/logout", VerifyJWT, logout);
 
-router.post('/refresh-token', RefreshTokenUpdate)
+router.post("/refresh-token", RefreshTokenUpdate);
+router.post("/forgotPassword", VerifyJWT, forgotPassword);
+router.post('/User-Info', VerifyJWT, UserInfo)
 
-module.exports =  router ;
+module.exports = router;

@@ -196,51 +196,148 @@ const logout = async (req, res) => {
 };
 
 const RefreshTokenUpdate = async (req, res) => {
-  //token comes in encrpted form
-  const incomingRFtoken = req.body.refreshtoken || req.cookie.refreshtoken;
+  try {
+    //token comes in encrpted form
+    const incomingRFtoken = req.body.refreshtoken || req.cookie.refreshtoken;
 
-  if (!incomingRFtoken) {
-    res.status(400).json({
+    if (!incomingRFtoken) {
+      res.status(400).json({
+        success: false,
+        message: "refershToken cant fetch!",
+      });
+    }
+
+    const DecodedToken = jwt.verify(
+      incomingRFtoken,
+      process.env.REFRESH_TOKEN_KEY
+    );
+
+    const UserInfo = await UserSchema.findById(DecodedToken?._id);
+
+    if (!UserInfo) {
+      res.status(400).json({
+        success: false,
+        message: "Token invalid!",
+      });
+    }
+
+    if (DecodedToken !== user.refreshtoken) {
+      res.status(400).json({
+        success: false,
+        message: "Token expire or used!",
+      });
+    }
+
+    const opt = {
+      secure: true,
+      httpOnly: true,
+    };
+
+    const { accessToken, NewrefreshToken } =
+      await GenerateRefreshandAccessTokens(UserInfo._id);
+
+    res
+      .status(200)
+      .cookie("accessToken", accessToken, opt)
+      .cookie("refreshToken", NewrefreshToken, opt)
+      .json({
+        success: true,
+        message: "New Refresh token update successfully!",
+      });
+  } catch (error) {
+    return res.status(500).json({
       success: false,
-      message: "refershToken cant fetch!",
+      message: error.message,
     });
   }
-
-  const DecodedToken = jwt.verify(
-    incomingRFtoken,
-    process.env.REFRESH_TOKEN_KEY
-  );
-
-  const UserInfo = await UserSchema.findById(DecodedToken?._id);
-
-  if (!UserInfo) {
-    res.status(400).json({
-      success: false,
-      message: "Token invalid!",
-    });
-  }
-
-  if (DecodedToken !== user.refreshtoken) {
-    res.status(400).json({
-      success: false,
-      message: "Token expire or used!",
-    });
-  }
-
-  const opt = {
-    secure : true,
-    httpOnly : true,
-  }
-
- const {accessToken, NewrefreshToken} = await GenerateRefreshandAccessTokens(UserInfo._id);
-
-  res.status(200)
-  .cookie('accessToken',  accessToken ,opt)
-  .cookie('refreshToken', NewrefreshToken ,opt)
-  .json({
-    success: true,
-    message: "New Refresh token update successfully!",
-  });
 };
 
-module.exports = { SignUp, login, logout, RefreshTokenUpdate };
+const forgotPassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const passwordChecker = await UserSchema.comparePassword(oldPassword);
+
+    const user = await UserSchema.findById(req.user?._id);
+
+    if (!passwordChecker) {
+      return res.status(400).json({
+        success: false,
+        message: "Enter correct password",
+      });
+    }
+
+    user.oldPassword = newPassword;
+
+    await UserSchema.save({ validateBeforeSave: false });
+
+    return res.status(200).json({
+      success: true,
+      message: "Password changed Successfully!",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+const UserInfo = async (req, res) => {
+  try {
+    return res.status(200).json({
+      payload: req.user,
+      success: true,
+      message: "Successfully User Data fetched",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+const changeEmailOrPassword = async (req, res) => {
+  try {
+    const { email, username } = req.body;
+
+    if (!(email || username)) {
+      return res.status(400).json({
+        success: false,
+        message: "Username or email is nessacary!",
+      });
+    }
+
+    const userData = await UserSchema.findByIdAndUpdate(
+      req.user?._id,
+      {
+        $set: {
+          username,
+          email,
+        },
+      },
+      { new: true }
+    ).select("-password");
+
+    return res.status(200).json({
+      success: true,
+      message: "User Information Update successfully!",
+      payload: userData,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+module.exports = {
+  SignUp,
+  login,
+  logout,
+  RefreshTokenUpdate,
+  forgotPassword,
+  UserInfo,
+  changeEmailOrPassword,
+};
